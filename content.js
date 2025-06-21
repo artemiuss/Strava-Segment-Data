@@ -8,8 +8,24 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   // Extract athlete name from <h1 class="text-title1 athlete-name">
   let athleteName = doc.querySelector('h1.athlete-name')?.textContent || "Unknown";
 
-  // Extract athlete image from <img class="avatar-img" src="">
-  let athleteImage = doc.querySelector('#athlete-profile .avatar-img-wrapper img.avatar-img')?.getAttribute('src') || "";
+  // Extract athlete image: find first occurrence of link to large.jpg in any attribute in any tag inside <div class="page container">
+  let athleteImage = "";
+  const pageContainer = doc.querySelector('div.page.container');
+  if (pageContainer) {
+    const allElements = pageContainer.querySelectorAll('*');
+    const largeJpgRegex = /https:\/\/[^"'\s>]+large\.jpg/;
+
+    outer: for (let el of allElements) {
+      if (!el.hasAttributes()) continue;
+      for (let attr of el.attributes) {
+        const match = attr.value.match(largeJpgRegex);
+        if (match) {
+          athleteImage = match[0];
+          break outer;
+        }
+      }
+    }
+  }
 
   // Fallback URL in case no athlete-specific URL is found
   let athleteUrl = `https://www.strava.com/athletes/${createdById}`;
@@ -34,16 +50,21 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   container.style.zIndex = '10000';
 
   // Create the image element with circular styling
-  const image = document.createElement('img');
-  image.src = athleteImage;
-  image.style.width = '50px';
-  image.style.height = '50px';
-  image.style.borderRadius = '50%'; // Circle shape
-  image.style.marginRight = '10px'; // Add margin between image and text
-  image.style.cursor = 'pointer';
-  image.onclick = () => {
-    window.open(athleteUrl, '_blank');
-  };
+  if (athleteImage !== "") {
+    image = document.createElement('img');
+    image.src = athleteImage;
+    image.style.width = '50px';
+    image.style.height = '50px';
+    image.style.borderRadius = '50%';
+    image.style.marginRight = '10px';
+    image.style.cursor = 'pointer';
+    image.onclick = () => {
+      window.open(athleteUrl, '_blank');
+    };
+  }
+  else {
+    image = null; // No image found
+  }
 
   // Create the text container for name and time
   const textContainer = document.createElement('div');
@@ -72,7 +93,9 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   textContainer.appendChild(createdAtText);
 
   // Append the image and text container to the main container
-  container.appendChild(image); // Image on the left
+  if (image) {
+    container.appendChild(image); // Image on the left
+  }
   container.appendChild(textContainer); // Text on the right
 
   // Inject the notification into the page
