@@ -1,0 +1,25 @@
+
+{
+  "manifest_version": 3,
+  "name": "Strava Segment Data",
+  "version": "1.0",
+  "description": "Fetches and displays Strava segment data",
+  "permissions": [
+    "activeTab",
+    "scripting",
+    "tabs",
+    "storage"
+  ],
+  "host_permissions": [
+    "https://www.strava.com/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://www.strava.com/segments/*"],
+      "js": ["content.js"]
+    }
+  ]
+}
